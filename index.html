@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Photo Quest</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 650px;
+    margin: auto;
+    padding: 18px;
+}
+
+.card {
+    background: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.5);
+}
+
+h1 {
+    margin-top: 0;
+    font-size: 30px;
+}
+
+h2 {
+    margin-bottom: 10px;
+}
+
+.muted {
+    color: #aaa;
+}
+
+.stats {
+    display: flex;
+    gap: 10px;
+    margin: 16px 0;
+}
+
+.stat {
+    flex: 1;
+    background: #292929;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.progress {
+    height: 8px;
+    background: #333;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: white;
+    transition: .3s;
+}
+
+label {
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 7px;
+    font-weight: bold;
+}
+
+select {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1px solid #555;
+    background: #111;
+    color: white;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    border: 0;
+    border-radius: 12px;
+    background: white;
+    color: #111;
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: 18px;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(.98);
+}
+
+.feedback {
+    margin-top: 18px;
+    padding: 15px;
+    border-radius: 12px;
+    background: #252525;
+}
+
+.good {
+    border: 1px solid #54d17a;
+}
+
+.bad {
+    border: 1px solid #ff6969;
+}
+
+.hidden {
+    display: none;
+}
+
+.small {
+    font-size: 14px;
+    line-height: 1.6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<!-- START -->
+<div id="startScreen">
+
+<h1>📸 PHOTO QUEST</h1>
+
+<p class="muted">
+Latihan ISO • Aperture • Shutter Speed
+</p>
+
+<p>
+Jadilah fotografer. Baca kondisi, pilih setting,
+dan dapatkan skor!
+</p>
+
+<button onclick="startGame()">
+MULAI QUEST 📸
+</button>
+
+</div>
+
+
+<!-- GAME -->
+<div id="gameScreen" class="hidden">
+
+<div class="stats">
+
+<div class="stat">
+Quest<br>
+<b id="questNumber">1/10</b>
+</div>
+
+<div class="stat">
+Skor<br>
+<b id="score">0</b>
+</div>
+
+<div class="stat">
+🔥 Streak<br>
+<b id="streak">0</b>
+</div>
+
+</div>
+
+
+<div class="progress">
+<div class="progress-fill" id="progress"></div>
+</div>
+
+
+<h2 id="questTitle"></h2>
+
+<p id="scenario"></p>
+
+<p>
+<b>🎯 Target:</b>
+<span id="target"></span>
+</p>
+
+
+<label>ISO</label>
+
+<select id="iso">
+
+<option value="100">100</option>
+<option value="200">200</option>
+<option value="400">400</option>
+<option value="800">800</option>
+<option value="1600">1600</option>
+<option value="3200">3200</option>
+
+</select>
+
+
+<label>Aperture / f-stop</label>
+
+<select id="aperture">
+
+<option value="f/1.4">f/1.4</option>
+<option value="f/1.8">f/1.8</option>
+<option value="f/2.8">f/2.8</option>
+<option value="f/4">f/4</option>
+<option value="f/5.6">f/5.6</option>
+<option value="f/8">f/8</option>
+<option value="f/11">f/11</option>
+
+</select>
+
+
+<label>Shutter Speed</label>
+
+<select id="shutter">
+
+<option value="30">1/30s</option>
+<option value="60">1/60s</option>
+<option value="125">1/125s</option>
+<option value="250">1/250s</option>
+<option value="500">1/500s</option>
+<option value="1000">1/1000s</option>
+
+</select>
+
+
+<button id="answerButton" onclick="checkAnswer()">
+JAWAB 📸
+</button>
+
+
+<div id="feedback" class="feedback hidden"></div>
+
+
+<button id="nextButton"
+class="hidden"
+onclick="nextQuest()">
+
+QUEST BERIKUTNYA ➜
+
+</button>
+
+</div>
+
+
+<!-- END -->
+<div id="endScreen" class="hidden">
+
+<h1>🏆 QUEST SELESAI</h1>
+
+<h2 id="finalScore"></h2>
+
+<p id="rank"></p>
+
+<p id="summary"></p>
+
+<button onclick="location.reload()">
+MAIN LAGI 🔄
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =========================
+   DATA QUEST
+========================= */
+
+const quests = [
+
+{
+title: "Quest #1 — Indoor Redup",
+
+scenario:
+"Ruangan agak redup. Orang duduk diam. Kamu ingin background blur dan foto tidak goyang.",
+
+target:
+"Terang + bokeh + aman dari goyangan.",
+
+iso: [800,1600],
+aperture: ["f/1.8","f/2.8"],
+shutter: [60,125],
+
+explanation:
+"ISO 800–1600 membantu di ruangan redup. f/1.8–2.8 memberi background blur. 1/60–1/125 cukup aman untuk subjek diam."
+},
+
+
+{
+title: "Quest #2 — Orang Berjalan",
+
+scenario:
+"Indoor agak gelap. Orang sedang berjalan melintasi ruangan.",
+
+target:
+"Gerakan cukup beku dan foto tetap terang.",
+
+iso: [800,1600],
+aperture: ["f/1.8","f/2.8"],
+shutter: [125,250],
+
+explanation:
+"Karena subjek bergerak, shutter harus lebih cepat. Kalau foto gelap, naikkan ISO atau buka aperture."
+},
+
+
+{
+title: "Quest #3 — Portrait Siang",
+
+scenario:
+"Outdoor siang hari. Matahari cukup terang. Subjek berdiri diam dan background ingin blur.",
+
+target:
+"Jangan overexposure + background blur.",
+
+iso: [100],
+aperture: ["f/1.8","f/2.8","f/4"],
+shutter: [500,1000],
+
+explanation:
+"ISO 100 cocok untuk kondisi terang. Aperture lebar memberi bokeh, sedangkan shutter cepat membantu mengurangi cahaya."
+},
+
+
+{
+title: "Quest #4 — Indoor Malam",
+
+scenario:
+"Ruangan gelap, hanya ada satu lampu meja. Subjek duduk diam.",
+
+target:
+"Terang + bokeh + minim noise + tidak blur.",
+
+iso: [1600,3200],
+aperture: ["f/1.8","f/2.8"],
+shutter: [60,125],
+
+explanation:
+"Gunakan aperture lebar dan shutter sekitar 1/60–1/125. ISO bisa dinaikkan jika foto masih gelap."
+},
+
+
+{
+title: "Quest #5 — Freeze Action",
+
+scenario:
+"Indoor cukup terang. Orang sedang melompat.",
+
+target:
+"Gerakan benar-benar beku.",
+
+iso: [200,400,800],
+aperture: ["f/2.8","f/4"],
+shutter: [250,500,1000],
+
+explanation:
+"Gerakan cepat membutuhkan shutter cepat. Kalau foto gelap, naikkan ISO."
+},
+
+
+{
+title: "Quest #6 — Golden Hour",
+
+scenario:
+"Matahari hampir terbenam. Kamu memotret portrait dengan cahaya hangat.",
+
+target:
+"Wajah terang + suasana sunset tetap terlihat + background blur.",
+
+iso: [400,800],
+aperture: ["f/1.8","f/2.8"],
+shutter: [125,250],
+
+explanation:
+"Golden hour mulai redup. ISO 400–800 dan aperture lebar cocok. Shutter 1/125–1/250 cukup aman."
+},
+
+
+{
+title: "Quest #7 — Lampu Kota",
+
+scenario:
+"Malam hari. Orang berdiri diam dengan lampu kota sebagai background.",
+
+target:
+"Subjek tajam + bokeh + tidak terlalu gelap.",
+
+iso: [1600,3200],
+aperture: ["f/1.8","f/2.8"],
+shutter: [60,125],
+
+explanation:
+"Karena subjek diam, shutter 1/60–1/125 cukup aman dan memungkinkan lebih banyak cahaya masuk."
+},
+
+
+{
+title: "Quest #8 — Cahaya Jendela",
+
+scenario:
+"Portrait dekat jendela. Cahaya jendela cukup terang, sedangkan bagian ruangan lebih gelap.",
+
+target:
+"Wajah jelas + background blur + tidak overexposure.",
+
+iso: [100,200,400],
+aperture: ["f/1.8","f/2.8"],
+shutter: [125,250,500],
+
+explanation:
+"Mulai dari ISO rendah dan aperture lebar. Atur shutter agar bagian terang dari jendela tidak overexposure."
+},
+
+
+{
+title: "Quest #9 — Air Terjun",
+
+scenario:
+"Outdoor siang. Kamu ingin air terlihat lembut seperti kapas.",
+
+target:
+"Gerakan air menjadi blur dengan exposure lebih lama.",
+
+iso: [100,200],
+aperture: ["f/8","f/11"],
+shutter: [30],
+
+explanation:
+"Shutter lambat membuat air menjadi blur. ISO rendah dan aperture sempit membantu mengurangi cahaya."
+},
+
+
+{
+title: "Quest #10 — Cityscape Malam",
+
+scenario:
+"Kamu menggunakan tripod untuk memotret cityscape malam. Tidak ada subjek bergerak.",
+
+target:
+"Minim noise + detail kota tajam.",
+
+iso: [100,200],
+aperture: ["f/5.6","f/8"],
+shutter: [30,60],
+
+explanation:
+"Karena memakai tripod, ISO rendah dan shutter lebih lambat bisa digunakan untuk mendapatkan foto yang bersih."
+}
+
+];
+
+
+/* =========================
+   VARIABLE GAME
+========================= */
+
+let currentQuest = 0;
+
+let score = 0;
+
+let streak = 0;
+
+let results = [];
+
+
+/* =========================
+   START GAME
+========================= */
+
+function startGame() {
+
+document
+.getElementById("startScreen")
+.classList.add("hidden");
+
+document
+.getElementById("gameScreen")
+.classList.remove("hidden");
+
+loadQuest();
+
+}
+
+
+/* =========================
+   LOAD QUEST
+========================= */
+
+function loadQuest() {
+
+const q = quests[currentQuest];
+
+
+document.getElementById("questNumber")
+.textContent =
+(currentQuest + 1) + "/" + quests.length;
+
+
+document.getElementById("score")
+.textContent = score;
+
+
+document.getElementById("streak")
+.textContent = streak;
+
+
+document.getElementById("progress")
+.style.width =
+(currentQuest / quests.length * 100) + "%";
+
+
+document.getElementById("questTitle")
+.textContent = q.title;
+
+
+document.getElementById("scenario")
+.textContent = q.scenario;
+
+
+document.getElementById("target")
+.textContent = q.target;
+
+
+document.getElementById("feedback")
+.className =
+"feedback hidden";
+
+
+document.getElementById("nextButton")
+.classList.add("hidden");
+
+
+document.getElementById("answerButton")
+.classList.remove("hidden");
+
+}
+
+
+/* =========================
+   CHECK ANSWER
+========================= */
+
+function checkAnswer() {
+
+const q = quests[currentQuest];
+
+
+const iso =
+Number(
+document.getElementById("iso").value
+);
+
+
+const aperture =
+document.getElementById("aperture").value;
+
+
+const shutter =
+Number(
+document.getElementById("shutter").value
+);
+
+
+let points = 0;
+
+
+/* ISO */
+
+if (q.iso.includes(iso)) {
+
+points += 3;
+
+}
+
+
+/* APERTURE */
+
+if (q.aperture.includes(aperture)) {
+
+points += 3;
+
+}
+
+
+/* SHUTTER */
+
+if (q.shutter.includes(shutter)) {
+
+points += 4;
+
+}
+
+
+/* SCORE */
+
+score += points;
+
+
+/* STREAK */
+
+if (points >= 7) {
+
+streak++;
+
+} else {
+
+streak = 0;
+
+}
+
+
+results.push(points);
+
+
+document.getElementById("score")
+.textContent = score;
+
+
+document.getElementById("streak")
+.textContent = streak;
+
+
+/* FEEDBACK */
+
+const feedback =
+document.getElementById("feedback");
+
+
+feedback.classList.remove("hidden");
+
+
+if (points >= 7) {
+
+feedback.className =
+"feedback good";
+
+feedback.innerHTML =
+
+"<b>🔥 Mantap! " +
+points +
+"/10</b><br><br>" +
+
+"Setting kamu:<br>" +
+
+"ISO " + iso +
+" • " +
+aperture +
+" • 1/" +
+shutter +
+"s<br><br>" +
+
+"<span class='small'>" +
+
+q.explanation +
+
+"</span>";
+
+} else {
+
+feedback.className =
+"feedback bad";
+
+feedback.innerHTML =
+
+"<b>🗿 Belum optimal! " +
+points +
+"/10</b><br><br>" +
+
+"Setting kamu:<br>" +
+
+"ISO " + iso +
+" • " +
+aperture +
+" • 1/" +
+shutter +
+"s<br><br>" +
+
+"<span class='small'>" +
+
+q.explanation +
+
+"</span>";
+
+}
+
+
+/* BUTTON */
+
+document
+.getElementById("answerButton")
+.classList.add("hidden");
+
+document
+.getElementById("nextButton")
+.classList.remove("hidden");
+
+}
+
+
+/* =========================
+   NEXT QUEST
+========================= */
+
+function nextQuest() {
+
+currentQuest++;
+
+
+if (currentQuest < quests.length) {
+
+loadQuest();
+
+} else {
+
+finishGame();
+
+}
+
+}
+
+
+/* =========================
+   FINISH GAME
+========================= */
+
+function finishGame() {
+
+document
+.getElementById("gameScreen")
+.classList.add("hidden");
+
+document
+.getElementById("endScreen")
+.classList.remove("hidden");
+
+
+document.getElementById("finalScore")
+.textContent =
+"Skor: " + score + "/100";
+
+
+let rank;
+
+
+if (score >= 90) {
+
+rank = "🏆 MASTER PHOTOGRAPHER";
+
+}
+
+else if (score >= 75) {
+
+rank = "🔥 PHOTOGRAPHER";
+
+}
+
+else if (score >= 60) {
+
+rank = "📸 ROOKIE PHOTOGRAPHER";
+
+}
+
+else {
+
+rank = "🗿 MASIH PEMANASAN";
+
+}
+
+
+document.getElementById("rank")
+.textContent = rank;
+
+
+const perfect =
+results.filter(
+x => x >= 7
+).length;
+
+
+document.getElementById("summary")
+.textContent =
+
+"Quest optimal: " +
+perfect +
+"/" +
+quests.length +
+
+". Coba lagi untuk mendapatkan skor 100!";
+
+}
+
+</script>
+
+</body>
+</html>
